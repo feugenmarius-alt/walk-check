@@ -791,11 +791,7 @@ function backToForm(){
 }
 
 function printReport(){
-  if(/iPhone|iPad|Android/i.test(navigator.userAgent)){
-    alert('To save this report / Pentru a salva raportul:\n\n📱 iPhone: Take a screenshot (Side + Volume Up)\n📱 Android: Take a screenshot (Power + Volume Down)\n\nOr use Share button below to send via WhatsApp/Email');
-  } else {
-    window.print();
-  }
+  window.print();
 }
 
 function shareApp(){
@@ -877,8 +873,8 @@ function renderSavedList(){
     h+='<div class="sr-top"><div class="sr-info"><div class="sr-reg">'+e.reg+'</div><div class="sr-driver">'+e.driver+'</div><div class="sr-date">'+e.date+' &bull; '+e.time+'</div></div>';
     h+='<span class="'+badgeCls+'">'+badgeTxt+'</span></div>';
     h+='<div class="sr-actions">';
-    h+='<button class="sr-btn sr-view" onclick="viewSaved('+e.id+')">&#128065; Vezi</button>';
-    h+='<button class="sr-btn sr-share" onclick="shareSaved('+e.id+')">&#128228; Trimite</button>';
+    h+='<button class="sr-btn sr-view" onclick="viewSaved('+e.id+')">&#128065; Vezi Raport</button>';
+    h+='<button class="sr-btn sr-share" onclick="pdfSaved('+e.id+')">&#128196; PDF</button>';
     h+='<button class="sr-btn sr-del" onclick="delSaved('+e.id+')">&#128465;</button>';
     h+='</div></div>';
   }
@@ -902,6 +898,15 @@ function shareSaved(id){
   else{alert(text);}
 }
 
+function pdfSaved(id){
+  var arr=getSaved();
+  var e=null;for(var i=0;i<arr.length;i++)if(arr[i].id===id){e=arr[i];break;}
+  if(!e)return;
+  document.getElementById('savedView').style.display='none';
+  buildAndShowReport(e,true);
+  setTimeout(function(){window.print();},400);
+}
+
 function delSaved(id){
   if(!confirm('Stergi acest raport?'))return;
   var arr=getSaved().filter(function(e){return e.id!==id;});
@@ -916,7 +921,7 @@ function buildAndShowReport(r,fromSaved){
   var tOk=r.tOk||0,tDef=r.tDef||0;
   var h='';
   h+='<button class="back-btn" onclick="'+(fromSavedFlag?'backFromSavedReport()':'backToForm()')+'">&#8592; '+(fromSavedFlag?'Inapoi la Salvate':'Inapoi la Formular')+'</button>';
-  if(!fromSavedFlag)h+='<div class="share-row"><button class="share-btn share-native" onclick="printReport()">&#128424; Print / Save PDF</button><button class="share-btn share-copy" onclick="shareReport()">&#128228; Share Report</button></div>';
+  h+='<div class="share-row"><button class="share-btn share-native" onclick="printReport()">&#128196; Salveaza PDF</button><button class="share-btn share-copy" onclick="shareReport()">&#128228; Trimite</button></div>';
   h+='<div class="rh"><div><h1>WALK AROUND CHECK<span class="dvsa-badge">DVSA</span></h1><small>HGV Daily Vehicle Inspection</small></div><div class="rdb"><div class="dl">DATE</div><div class="dv">'+r.date+'</div></div></div>';
   h+='<div class="ri"><div class="ric"><div class="il">DRIVER / SOFER</div><div class="iv">'+r.driver+'</div></div><div class="ric"><div class="il">TRUCK</div><div class="iv">'+r.reg+'</div></div><div class="ric"><div class="il">TRAILER</div><div class="iv">'+r.trailer+'</div></div><div class="ric"><div class="il">KM/MILES</div><div class="iv">'+r.km+'</div></div><div class="ric"><div class="il">TIME</div><div class="iv">'+r.time+'</div></div></div>';
   h+='<div class="rs"><div class="rsc st"><div class="sn">'+(tOk+tDef)+'</div><div class="sl">TOTAL</div></div><div class="rsc sok"><div class="sn">'+tOk+'</div><div class="sl">OK</div></div><div class="rsc sdef"><div class="sn">'+tDef+'</div><div class="sl">DEFECTS</div></div></div>';
