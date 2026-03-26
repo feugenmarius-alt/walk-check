@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Walk Around Check - DVSA</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Walk Check">
+<meta name="theme-color" content="#e67e22">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f0f2f5;--surface:#fff;--surface2:#e8ecf1;--accent:#e67e22;--accent-dark:#c96b15;--green:#27ae60;--green-bg:rgba(39,174,96,0.10);--red:#e74c3c;--red-bg:rgba(231,76,60,0.08);--text:#1a1d2e;--text2:#6b7280;--border:#d5dae2;--radius:14px;--shadow:0 2px 8px rgba(0,0,0,0.06)}
@@ -819,6 +823,15 @@ function copyLink(){
 try{document.getElementById('checkDate').valueAsDate=new Date()}catch(e){}
 try{var n=new Date();document.getElementById('startTime').value=('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2)}catch(e){}
 upd();
+
+// Register Service Worker for PWA / offline support
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(err){
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
 </script>
 </body>
 </html>
