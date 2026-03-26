@@ -81,6 +81,28 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .share-btn{padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:'Outfit',sans-serif}
 .share-native{background:#25D366;color:#fff}
 .share-copy{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+/* === SAVED REPORTS === */
+#savedView{display:none;padding:0 12px 120px;max-width:520px;margin:0 auto}
+.sv-hdr{display:flex;align-items:center;gap:10px;padding:14px 0 16px}
+.sv-hdr h2{font-size:17px;font-weight:700;flex:1}
+.sv-back{background:none;border:none;font-size:22px;cursor:pointer;padding:4px;color:var(--text)}
+.sv-empty{text-align:center;padding:48px 20px;color:var(--text2)}
+.sv-empty .sv-ei{font-size:40px;margin-bottom:10px}
+.sv-empty p{font-size:13px}
+.sr-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.sr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.sr-info{flex:1}
+.sr-reg{font-size:15px;font-weight:700}
+.sr-driver{font-size:11px;color:var(--text2);margin-top:2px}
+.sr-date{font-size:10px;color:var(--text2);font-family:'Space Mono',monospace;margin-top:3px}
+.sr-badge{padding:3px 8px;border-radius:6px;font-size:9px;font-weight:700;font-family:'Space Mono',monospace;white-space:nowrap}
+.sr-actions{display:flex;gap:6px;margin-top:10px}
+.sr-btn{flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:'Outfit',sans-serif}
+.sr-view{background:var(--accent);color:#fff}
+.sr-share{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.sr-del{background:var(--red-bg);color:var(--red);border:1px solid rgba(231,76,60,0.2);flex:0;padding:8px 12px}
+.saved-fab{position:fixed;bottom:24px;right:16px;background:var(--accent);color:#fff;border:none;border-radius:50px;padding:12px 18px;font-size:12px;font-weight:700;font-family:'Outfit',sans-serif;box-shadow:0 4px 20px rgba(230,126,34,0.35);cursor:pointer;z-index:200;display:flex;align-items:center;gap:6px}
+.saved-cnt{background:#fff;color:var(--accent);border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
 
 /* === REPORT STYLES (inline in same page) === */
 .rh{background:linear-gradient(135deg,#e67e22,#c96b15);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}.rh h1{font-size:18px;font-weight:800}.rh small{font-size:9px;opacity:.85;display:block;margin-top:2px}
@@ -712,6 +734,20 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 </div>
 </div>
 
+<!-- ========== SAVED REPORTS VIEW ========== -->
+<div id="savedView">
+  <div class="sv-hdr">
+    <button class="sv-back" onclick="backToFormFromSaved()">&#8592;</button>
+    <h2>&#128190; Rapoarte Salvate</h2>
+  </div>
+  <div id="savedList"></div>
+</div>
+
+<!-- FAB: Saved Reports button (visible on form) -->
+<button class="saved-fab" id="savedFab" onclick="showSavedReports()" style="display:none">
+  &#128190; Salvate <span class="saved-cnt" id="savedCnt">0</span>
+</button>
+
 <!-- ========== REPORT VIEW (same page, no blob) ========== -->
 <div id="reportView"></div>
 
@@ -736,59 +772,21 @@ var sig=document.getElementById('sigInput'),drv=document.getElementById('driverN
 if(btn)btn.disabled=!(ch===TOTAL&&sig&&sig.value.trim()&&drv&&drv.value.trim()&&reg&&reg.value.trim());}
 
 function showReport(){
-  // Collect all data including notes and photos
   var r={driver:document.getElementById('driverName').value,reg:document.getElementById('regNumber').value,trailer:document.getElementById('trailerReg').value||'N/A',date:document.getElementById('checkDate').value,km:document.getElementById('km').value||'N/A',time:document.getElementById('startTime').value||'N/A',sig:document.getElementById('sigInput').value,notes:document.getElementById('addNotes').value||'',cats:[]};
-  var tOk=0,tDef=0;
   for(var c=0;c<CATS.length;c++){var cd={name:CATS[c].name,items:[]};for(var i=0;i<CATS[c].items.length;i++){var k=c+'_'+i,it=CATS[c].items[i];
-    // Read note directly from textarea to be sure
-    var noteEl=document.getElementById('ta_'+k);
-    var noteVal=noteEl?noteEl.value:'';
-    var sevEl=document.getElementById('sev_'+k);
-    var sevVal=sevEl?sevEl.value:'';
-    var e={n:it.n,en:it.en,ro:it.ro,status:states[k]||'ok',note:noteVal,sev:sevVal,photos:photos[k]||[]};
-    if(states[k]==='defect')tDef++;else tOk++;
-    cd.items.push(e);};r.cats.push(cd);}
-
-  var ts=new Date().toLocaleString('en-GB');
-  var h='';
-
-  // Back button + print/share
-  h+='<button class="back-btn" onclick="backToForm()">\u2190 Back to Form / Inapoi la Formular</button>';
-  h+='<div class="share-row"><button class="share-btn share-native" onclick="printReport()">🖨️ Print / Save PDF</button><button class="share-btn share-copy" onclick="shareReport()">📤 Share Report</button></div>';
-
-  // Header
-  h+='<div class="rh"><div><h1>WALK AROUND CHECK<span class="dvsa-badge">DVSA</span></h1><small>HGV Daily Vehicle Inspection</small></div><div class="rdb"><div class="dl">DATE</div><div class="dv">'+r.date+'</div></div></div>';
-  h+='<div class="ri"><div class="ric"><div class="il">DRIVER / SOFER</div><div class="iv">'+r.driver+'</div></div><div class="ric"><div class="il">TRUCK</div><div class="iv">'+r.reg+'</div></div><div class="ric"><div class="il">TRAILER</div><div class="iv">'+r.trailer+'</div></div><div class="ric"><div class="il">KM/MILES</div><div class="iv">'+r.km+'</div></div><div class="ric"><div class="il">TIME</div><div class="iv">'+r.time+'</div></div></div>';
-  h+='<div class="rs"><div class="rsc st"><div class="sn">'+(tOk+tDef)+'</div><div class="sl">TOTAL</div></div><div class="rsc sok"><div class="sn">'+tOk+'</div><div class="sl">OK</div></div><div class="rsc sdef"><div class="sn">'+tDef+'</div><div class="sl">DEFECTS</div></div></div>';
-  if(tDef===0)h+='<div class="nil">\u2713 NIL DEFECTS \u2014 Vehicle safe to drive / Fara defecte</div>';
-
-  // Categories
-  for(var c=0;c<r.cats.length;c++){var cat=r.cats[c],cD=0;for(var i=0;i<cat.items.length;i++)if(cat.items[i].status==='defect')cD++;
-    h+='<div class="rc"><div class="rch '+(cD>0?'chdef':'chok')+'"><span>'+cat.name+'</span><span class="cbg '+(cD>0?'cbgr':'cbgg')+'">'+(cD>0?cD+' DEFECT':'ALL OK')+'</span></div><table class="rtbl">';
-    for(var i=0;i<cat.items.length;i++){var it=cat.items[i];
-      h+='<tr><td style="width:24px;text-align:center;color:#e67e22;font-weight:700;font-size:8px">'+it.n+'</td><td><span class="dot '+(it.status==='ok'?'dg':'dr')+'"></span>'+it.en+'<br><span class="iro">'+it.ro+'</span></td><td class="'+(it.status==='ok'?'stok':'stdef')+'" style="width:60px;text-align:right">'+(it.status==='ok'?'OK':'DEFECT')+'</td></tr>';
-      var sevHtml='';if(it.sev){var sc=it.sev==='minor'?'sev-minor':it.sev==='serious'?'sev-serious':'sev-dangerous';sevHtml='<span class="sev '+sc+'">'+it.sev.toUpperCase()+'</span>';}
-      if(it.note||it.sev){h+='<tr><td></td><td colspan="2"><div class="dn">'+(it.note||'')+sevHtml+'</div></td></tr>';}
-      if(it.photos&&it.photos.length>0){h+='<tr><td></td><td colspan="2"><div class="dph">';for(var p=0;p<it.photos.length;p++){h+='<img src="'+it.photos[p]+'">';}h+='</div></td></tr>';}
-    }
-    h+='</table></div>';
-  }
-
-  if(r.notes)h+='<div class="an"><div class="an-l">Additional Notes / Observatii</div>'+r.notes+'</div>';
-  h+='<div class="rsig"><div class="rsig-l">DRIVER SIGNATURE / SEMNATURA</div><div class="rsig-n">'+r.sig+'</div><div class="rsig-t">'+ts+'</div></div>';
-  h+='<div class="rft">Walk Around Check \u2014 DVSA HGV Daily Inspection \u2022 '+ts+'</div>';
-
-  // Show report, hide form
+    var noteEl=document.getElementById('ta_'+k);var sevEl=document.getElementById('sev_'+k);
+    cd.items.push({n:it.n,en:it.en,ro:it.ro,status:states[k]||'ok',note:noteEl?noteEl.value:'',sev:sevEl?sevEl.value:'',photos:photos[k]||[]});};r.cats.push(cd);}
+  // Auto-save
+  saveCurrentReport(r);
   document.getElementById('formView').style.display='none';
-  var rv=document.getElementById('reportView');
-  rv.innerHTML=h;
-  rv.style.display='block';
-  window.scrollTo(0,0);
+  document.getElementById('savedFab').style.display='none';
+  buildAndShowReport(r,false);
 }
 
 function backToForm(){
   document.getElementById('formView').style.display='block';
   document.getElementById('reportView').style.display='none';
+  updFab();
   window.scrollTo(0,0);
 }
 
@@ -820,9 +818,138 @@ function copyLink(){
   else{prompt('Copy this link:',url);}
 }
 
+// ========== SAVED REPORTS ==========
+var STORAGE_KEY='wac_saved_reports';
+
+function getSaved(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}
+function putSaved(arr){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}catch(e){alert('Spatiu insuficient pentru salvare.');}}
+
+function saveCurrentReport(r){
+  var arr=getSaved();
+  var entry={id:Date.now(),savedAt:new Date().toLocaleString('en-GB'),driver:r.driver,reg:r.reg,trailer:r.trailer,date:r.date,km:r.km,time:r.time,sig:r.sig,notes:r.notes,cats:r.cats,tOk:0,tDef:0};
+  for(var c=0;c<r.cats.length;c++)for(var i=0;i<r.cats[c].items.length;i++){if(r.cats[c].items[i].status==='defect')entry.tDef++;else entry.tOk++;}
+  arr.unshift(entry);
+  if(arr.length>50)arr=arr.slice(0,50);
+  putSaved(arr);
+  updFab();
+}
+
+function updFab(){
+  var arr=getSaved();
+  var fab=document.getElementById('savedFab'),cnt=document.getElementById('savedCnt');
+  if(!fab)return;
+  if(arr.length>0){fab.style.display='flex';cnt.textContent=arr.length;}
+  else{fab.style.display='none';}
+}
+
+function showSavedReports(){
+  document.getElementById('formView').style.display='none';
+  document.getElementById('reportView').style.display='none';
+  document.getElementById('savedFab').style.display='none';
+  var sv=document.getElementById('savedView');
+  sv.style.display='block';
+  renderSavedList();
+  window.scrollTo(0,0);
+}
+
+function backToFormFromSaved(){
+  document.getElementById('savedView').style.display='none';
+  document.getElementById('formView').style.display='block';
+  updFab();
+  window.scrollTo(0,0);
+}
+
+function renderSavedList(){
+  var arr=getSaved();
+  var el=document.getElementById('savedList');
+  if(!el)return;
+  if(arr.length===0){
+    el.innerHTML='<div class="sv-empty"><div class="sv-ei">&#128190;</div><p>Nu ai rapoarte salvate inca.<br>Completeaza o inspectie si va fi salvata automat.</p></div>';
+    return;
+  }
+  var h='';
+  for(var i=0;i<arr.length;i++){
+    var e=arr[i];
+    var hasD=e.tDef>0;
+    var badgeCls=hasD?'sr-badge" style="background:var(--red-bg);color:var(--red)':'sr-badge" style="background:var(--green-bg);color:var(--green)';
+    var badgeTxt=hasD?e.tDef+' DEFECT':'NIL DEFECTS';
+    h+='<div class="sr-card">';
+    h+='<div class="sr-top"><div class="sr-info"><div class="sr-reg">'+e.reg+'</div><div class="sr-driver">'+e.driver+'</div><div class="sr-date">'+e.date+' &bull; '+e.time+'</div></div>';
+    h+='<span class="'+badgeCls+'">'+badgeTxt+'</span></div>';
+    h+='<div class="sr-actions">';
+    h+='<button class="sr-btn sr-view" onclick="viewSaved('+e.id+')">&#128065; Vezi</button>';
+    h+='<button class="sr-btn sr-share" onclick="shareSaved('+e.id+')">&#128228; Trimite</button>';
+    h+='<button class="sr-btn sr-del" onclick="delSaved('+e.id+')">&#128465;</button>';
+    h+='</div></div>';
+  }
+  el.innerHTML=h;
+}
+
+function viewSaved(id){
+  var arr=getSaved();
+  var e=null;for(var i=0;i<arr.length;i++)if(arr[i].id===id){e=arr[i];break;}
+  if(!e)return;
+  document.getElementById('savedView').style.display='none';
+  buildAndShowReport(e,true);
+}
+
+function shareSaved(id){
+  var arr=getSaved();
+  var e=null;for(var i=0;i<arr.length;i++)if(arr[i].id===id){e=arr[i];break;}
+  if(!e)return;
+  var text='\ud83d\udccb Walk Around Check Report\nSofer: '+e.driver+'\nCamion: '+e.reg+'\nData: '+e.date+'\nDefecte: '+(e.tDef===0?'NIL':e.tDef)+'\nSalvat: '+e.savedAt;
+  if(navigator.share){navigator.share({title:'Walk Check - '+e.reg,text:text}).catch(function(){});}
+  else{alert(text);}
+}
+
+function delSaved(id){
+  if(!confirm('Stergi acest raport?'))return;
+  var arr=getSaved().filter(function(e){return e.id!==id;});
+  putSaved(arr);
+  renderSavedList();
+  updFab();
+}
+
+function buildAndShowReport(r,fromSaved){
+  var fromSavedFlag=fromSaved||false;
+  var ts=r.savedAt||new Date().toLocaleString('en-GB');
+  var tOk=r.tOk||0,tDef=r.tDef||0;
+  var h='';
+  h+='<button class="back-btn" onclick="'+(fromSavedFlag?'backFromSavedReport()':'backToForm()')+'">&#8592; '+(fromSavedFlag?'Inapoi la Salvate':'Inapoi la Formular')+'</button>';
+  if(!fromSavedFlag)h+='<div class="share-row"><button class="share-btn share-native" onclick="printReport()">&#128424; Print / Save PDF</button><button class="share-btn share-copy" onclick="shareReport()">&#128228; Share Report</button></div>';
+  h+='<div class="rh"><div><h1>WALK AROUND CHECK<span class="dvsa-badge">DVSA</span></h1><small>HGV Daily Vehicle Inspection</small></div><div class="rdb"><div class="dl">DATE</div><div class="dv">'+r.date+'</div></div></div>';
+  h+='<div class="ri"><div class="ric"><div class="il">DRIVER / SOFER</div><div class="iv">'+r.driver+'</div></div><div class="ric"><div class="il">TRUCK</div><div class="iv">'+r.reg+'</div></div><div class="ric"><div class="il">TRAILER</div><div class="iv">'+r.trailer+'</div></div><div class="ric"><div class="il">KM/MILES</div><div class="iv">'+r.km+'</div></div><div class="ric"><div class="il">TIME</div><div class="iv">'+r.time+'</div></div></div>';
+  h+='<div class="rs"><div class="rsc st"><div class="sn">'+(tOk+tDef)+'</div><div class="sl">TOTAL</div></div><div class="rsc sok"><div class="sn">'+tOk+'</div><div class="sl">OK</div></div><div class="rsc sdef"><div class="sn">'+tDef+'</div><div class="sl">DEFECTS</div></div></div>';
+  if(tDef===0)h+='<div class="nil">\u2713 NIL DEFECTS \u2014 Vehicle safe to drive</div>';
+  for(var c=0;c<r.cats.length;c++){var cat=r.cats[c],cD=0;for(var i=0;i<cat.items.length;i++)if(cat.items[i].status==='defect')cD++;
+    h+='<div class="rc"><div class="rch '+(cD>0?'chdef':'chok')+'"><span>'+cat.name+'</span><span class="cbg '+(cD>0?'cbgr':'cbgg')+'">'+(cD>0?cD+' DEFECT':'ALL OK')+'</span></div><table class="rtbl">';
+    for(var j=0;j<cat.items.length;j++){var it=cat.items[j];
+      h+='<tr><td style="width:24px;text-align:center;color:#e67e22;font-weight:700;font-size:8px">'+it.n+'</td><td><span class="dot '+(it.status==='ok'?'dg':'dr')+'"></span>'+it.en+'<br><span class="iro">'+it.ro+'</span></td><td class="'+(it.status==='ok'?'stok':'stdef')+'" style="width:60px;text-align:right">'+(it.status==='ok'?'OK':'DEFECT')+'</td></tr>';
+      var sevHtml='';if(it.sev){var sc=it.sev==='minor'?'sev-minor':it.sev==='serious'?'sev-serious':'sev-dangerous';sevHtml='<span class="sev '+sc+'">'+it.sev.toUpperCase()+'</span>';}
+      if(it.note||it.sev){h+='<tr><td></td><td colspan="2"><div class="dn">'+(it.note||'')+sevHtml+'</div></td></tr>';}
+      if(it.photos&&it.photos.length>0){h+='<tr><td></td><td colspan="2"><div class="dph">';for(var p=0;p<it.photos.length;p++){h+='<img src="'+it.photos[p]+'">';}h+='</div></td></tr>';}
+    }
+    h+='</table></div>';
+  }
+  if(r.notes)h+='<div class="an"><div class="an-l">Additional Notes</div>'+r.notes+'</div>';
+  h+='<div class="rsig"><div class="rsig-l">DRIVER SIGNATURE</div><div class="rsig-n">'+r.sig+'</div><div class="rsig-t">'+ts+'</div></div>';
+  h+='<div class="rft">Walk Around Check \u2014 DVSA HGV Daily Inspection \u2022 '+ts+'</div>';
+  var rv=document.getElementById('reportView');
+  rv.innerHTML=h;rv.style.display='block';
+  window.scrollTo(0,0);
+}
+
+function backFromSavedReport(){
+  document.getElementById('reportView').style.display='none';
+  document.getElementById('savedView').style.display='block';
+  renderSavedList();
+  window.scrollTo(0,0);
+}
+
 try{document.getElementById('checkDate').valueAsDate=new Date()}catch(e){}
 try{var n=new Date();document.getElementById('startTime').value=('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2)}catch(e){}
 upd();
+updFab();
 
 // Register Service Worker for PWA / offline support
 if('serviceWorker' in navigator){
